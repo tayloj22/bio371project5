@@ -99,6 +99,7 @@ my %codings = ("UUU", 1, "UUC", 1, #phe
                "GGU", 20, "GGC", 20, "GGA", 20, "GGG", 20, #gly
                "UAA", 21, "UAG", 21, "UGA", 21); #stop codons
 
+
 # Now we can begin to calculate the CAI
 print "\nNow calculating the CAI...\n";
 # First step: get observed frequencies for each codon
@@ -121,6 +122,9 @@ while (my ($key, $value) = each(%count)) {
 # Hash the codons to their observed counts
 my %observedCounts;
 @observedCounts{@observedCodons} = @observedCounts;
+
+# Total count for codons in an amino acid - index is aa value
+my @observedAACounts;
 
 # Now, iterate through each codon to calculate a value for Wi
 my $index = 0;
@@ -199,3 +203,68 @@ my $CAI = (1 / $total) * $wi;
 $CAI = exp $CAI;
 
 print "\nThe calculated Codon Adaptation Index is: $CAI\n";
+
+print "\nNow calculating the Relative Synonymous Codon Usage...\n";
+
+print "\nCodon\tRSCU value\n"; #grid header
+print "-----\t----------\n"; #underline
+
+my %numcodings = ("UUU", 2, "UUC", 2, #phe
+               "UUA", 6, "UUG", 6, "CUU", 6, "CUC", 6, "CUA", 6, "CUG", 6, #leu
+               "UCU", 6, "UCC", 6, "UCA", 6, "UCG", 6, "AGU", 6, "AGC", 6, #ser
+               "UAU", 2, "UAC", 2, #tyr
+               "UGU", 2, "UGC", 2, #cys
+               "UGG", 1, #trp
+               "CCU", 4, "CCC", 4, "CCA", 4, "CCG", 4, #pro
+               "CAU", 2, "CAC", 2, #his
+               "CAA", 2, "CAG", 2, #gin
+               "CGU", 6, "CGC", 6, "CGA", 6, "CGG", 6, "AGA", 6, "AGG", 6, #arg
+               "AUU", 3, "AUC", 3, "AUA", 3, #lle
+               "AUG", 1, #met
+               "ACU", 4, "ACC", 4, "ACA", 4, "ACG", 4, #thr
+               "AAU", 2, "AAC", 2, #asn
+               "AAA", 2, "AAG", 2, #lys
+               "GUU", 4, "GUC", 4, "GUA", 4, "GUG", 4, #val
+               "GCU", 4, "GCC", 4, "GCA", 4, "GCG", 4, #ala
+               "GAU", 2, "GAC", 2, #asp
+               "GAA", 2, "GAG", 2, #glu
+               "GGU", 4, "GGC", 4, "GGA", 4, "GGG", 4, #gly
+               "UAA", 3, "UAG", 3, "UGA", 3); #stop codons
+
+# Function to determine RSCU
+sub RSCU {
+    my $ni = $numcodings{$_[0]}; # Number of encodings for the amino acid
+    my $xij = $observedCounts{$_[0]}; # Number of occurences of codon
+    my $sumxij = $observedAACounts[$_[1]]; # Sum of occurences of given amino acid (each codon)
+    my $rscu = ($ni * $xij) / $sumxij; # RSCU value
+
+   print $_[0] . "\t";
+   printf("%.3f", $rscu);
+   print "\n";
+}
+
+# Iterate through codons and add up amino acid counts
+keys %codings; # reset the iterator so previous calls don't affect it
+while(my($k, $v) = each %codings) {
+    
+    if(exists($observedCounts{$k}))
+    {
+        $observedAACounts[$v] += $observedCounts{$k};
+    }
+
+}
+
+# Now, iterate through each codon and call RSCU function if codon was used in sequence
+keys %codings; # reset the iterator so previous calls don't affect it
+while(my($k, $v) = each %codings) {
+    
+    if(exists($observedCounts{$k}))
+    {
+        RSCU($k, $v);
+
+    } else {
+        print $k . "\tNot used.\n";        
+
+    }
+
+}
